@@ -22,4 +22,4 @@ test:
 
 production:
   <<: *default
-  database: poker_production
+  database: poker_development
