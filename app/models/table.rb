@@ -7,14 +7,20 @@ class Table < ApplicationRecord
   has_many :hands
 
   def create_hand!
-    cards      = Deck.shuffle
-    hand_cards = cards.shift(5)
-    hand       = hands.create!(cards: hand_cards, dealer: next_dealer)
-    players.each do |player|
-      hand.player_hands.create!(player: player, cards: cards.shift(2))
+    ActiveRecord::Base.transaction do
+      cards      = Deck.shuffle
+      hand_cards = cards.shift(5)
+      hand       = hands.create!(cards: hand_cards, dealer: next_dealer)
+      hand.setup!(cards)
     end
+  end
 
-    # handle blinds
+  def distribute_pot!(winners:, pot:)
+    winning_table_players = table_players.select { |table_player| winners.include?(table_player.player) }
+    winning_pot_amount    = pot / winners.count
+    winning_table_players.each do |table_player|
+      table_player.update(balance: table_player.balance + winning_pot_amount)
+    end
   end
 
   def small_blind_amount
