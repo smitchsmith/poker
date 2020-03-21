@@ -5,6 +5,7 @@
 #   git config --global core.excludesfile '~/.gitignore_global'
 
 .DS_STORE
+sc.rb
 
 *.rbc
 capybara-*.html
