@@ -7,6 +7,7 @@ class HandsController < ApplicationController
   def update
     hand = Hand.find(params[:id])
     hand.next!(player: current_user, params: params)
+    HandChannel.broadcast_to(hand, "update")
     redirect_to hand_path(hand.id)
   end
 end
