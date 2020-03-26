@@ -5,4 +5,7 @@ class User < ApplicationRecord
   # :confirmable, :lockable, :timeoutable, :trackable and :omniauthable
   devise :database_authenticatable, :registerable,
          :recoverable, :rememberable, :validatable
+
+  has_many :table_players, foreign_key: :player_id
+  has_many :tables, through: :table_players
 end

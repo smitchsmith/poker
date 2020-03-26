@@ -1,12 +1,12 @@
 <div class="row mt-3">
   <div class="col">
-    <% @hand.player_hands.each do |player_hand| %>
+    <% @hand.player_hands.order(:player_id).each do |player_hand| %>
       <div class="row border mb-3 mx-2">
-        <div class="col border-right border-bottom"><%= player_hand.player_name %></div>
-        <div class="col border-bottom"><%= player_hand.position %></div>
+        <div class="col border-right border-bottom"><%= player_hand.name_with_position %></div>
+        <div class="col border-bottom"><%= player_hand.status %></div>
         <div class="w-100"></div>
-        <div class="col border-right">¢<%= player_hand.player_balance %></div>
-        <div class="col"><%= player_hand.status %></div>
+        <div class="col border-right">Bank: ¢<%= player_hand.player_balance %></div>
+        <div class="col">Pot: ¢<%= player_hand.bets_sum %></div>
       </div>
     <% end %>
   </div>
@@ -111,18 +111,22 @@
                   <%= link_to "Go To Next Hand", hand_path(@hand.next_hand.id), class: "btn btn-block btn-primary" %>
                 </div>
               <% else %>
-                <% if @current_player_hand.dealer? %>
+                <% if @current_player_hand.small_blind? %>
                   <div class="mb-3">
                     <%= link_to "Deal Next Hand", deal_cards_table_path(@hand.table_id), method: :post, class: "btn btn-block btn-primary" %>
                   </div>
                 <% else %>
                   <div class="mb-3">
-                    <button type="button" class="btn btn-block btn-secondary" disabled>Deal Next Hand</button>
+                    <button type="button" class="btn btn-block btn-secondary" disabled>Waiting For Deal</button>
                   </div>
                 <% end %>
               <% end %>
           <% else %>
-            <% if @hand.current_bet.present? %>
+            <% if @current_player_hand.folded? %>
+              <div class="mb-3">
+                <button type="button" class="btn btn-block btn-secondary" disabled>Folded</button>
+              </div>
+            <% elsif @hand.current_bet.present? %>
               <div class="mb-3">
                 <button type="button" class="btn btn-block btn-secondary" disabled>Fold</button>
               </div>

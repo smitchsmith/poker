@@ -28,9 +28,17 @@ class PlayerHand < ApplicationRecord
     "#{best_poker_hand.rank} (#{best_poker_hand.cards})"
   end
 
+  def winner_status
+    if hand.won_by_fold?
+      "Winner!"
+    else
+      "Winner: #{result}"
+    end
+  end
+
   def status
     if hand.finished?
-      "Winner: #{result}" if hand.winners.include?(player)
+      winner_status if hand.winners.include?(player)
     else
       if folded?
         "Folded"
@@ -48,14 +56,16 @@ class PlayerHand < ApplicationRecord
     end
   end
 
-  def position
-    if dealer?
-      "Dealer"
+  def name_with_position
+    position = if dealer?
+      "D"
     elsif small_blind?
-      "Small Blind"
+      "SB"
     elsif big_blind?
-      "Big Blind"
+      "BB"
     end
+
+    position.present? ? "#{player_name} (#{position})" : player_name
   end
 
   def has_acted?

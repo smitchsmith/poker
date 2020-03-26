@@ -1,1 +1,10 @@
-Welcome to poker!
+<h3 class="mt-3">Your Tables</h3>
+<% current_user.table_players.each do |table_player| %>
+  <p>
+    <% if table_player.table.current_hand.present? %>
+      <%= link_to table_player.table.name, hand_path(table_player.table.current_hand.id) %>
+    <% else %>
+      <%= link_to table_player.table.name, deal_cards_table_path(table_player.table.id), method: :post %>
+    <% end %>
+  </p>
+<% end %>

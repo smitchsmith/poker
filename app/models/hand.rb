@@ -75,6 +75,10 @@ class Hand < ApplicationRecord
     end
   end
 
+  def won_by_fold?
+    remaining_players.count == 1
+  end
+
   def next_round?
     next_player.blank? || remaining_players.count == 1
   end
@@ -113,10 +117,14 @@ class Hand < ApplicationRecord
     (remaining_players - [dealer]).first
   end
 
+  def big_blind_folded?
+    folded_players.include?(big_blind_player)
+  end
+
   def next_player
     next_player = (bettor_relative_players - folded_players - acted_players - [current_actor]).first
 
-    if round.zero? && bets.where(player_id: big_blind_player).count == 1
+    if round.zero? && bets.where(player_id: big_blind_player).count == 1 && !big_blind_folded? && current_bettor == big_blind_player
       if current_actor == big_blind_player
         nil
       elsif next_player.blank?
@@ -130,7 +138,7 @@ class Hand < ApplicationRecord
   end
 
   def relative_player(relative_position)
-    remaining_players[relative_position % players.count]
+    dealer_relative_players[relative_position % players.count]
   end
 
   def remaining_players

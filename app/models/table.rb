@@ -19,7 +19,7 @@ class Table < ApplicationRecord
     winning_table_players = table_players.select { |table_player| winners.include?(table_player.player) }
     winning_pot_amount    = pot / winners.count
     winning_table_players.each do |table_player|
-      table_player.update(balance: table_player.balance + winning_pot_amount)
+      table_player.update!(balance: table_player.balance + winning_pot_amount)
     end
   end
 
@@ -35,6 +35,10 @@ class Table < ApplicationRecord
     all_players.order(:id)
   end
 
+  def current_hand
+    hands.order(:id).last
+  end
+
   private
 
   def next_dealer
@@ -44,9 +48,5 @@ class Table < ApplicationRecord
 
   def current_dealer
     current_hand.try(:dealer)
-  end
-
-  def current_hand
-    hands.order(:id).last
   end
 end
