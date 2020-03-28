@@ -1,4 +1,4 @@
-# cards, current_actor, current_bet, round
+# cards, round, table, dealer, current_actor, current_betting_round
 
 class Hand < ApplicationRecord
   VISIBLE_CARDS = [0, 3, 4, 5]
@@ -6,13 +6,13 @@ class Hand < ApplicationRecord
   belongs_to :table
   belongs_to :dealer, class_name: "User"
   belongs_to :current_actor, class_name: "User", optional: true
-  belongs_to :current_bet, class_name: "Bet", optional: true
+  belongs_to :current_betting_round, class_name: "BettingRound", optional: true
   has_many :player_hands
-  has_many :bets
+  has_many :betting_rounds
+  has_many :bets, through: :betting_rounds
 
   delegate :name, to: :table, prefix: true
   delegate :players, :small_blind_amount, :big_blind_amount, to: :table
-  delegate :amount, to: :current_bet, prefix: true, allow_nil: true
 
   def setup!(cards)
     ActiveRecord::Base.transaction do
@@ -20,11 +20,42 @@ class Hand < ApplicationRecord
         player_hands.create!(player: player, cards: cards.shift(2))
       end
 
-      bets.create!(player: small_blind_player, amount: small_blind_amount)
-      big_blind_bet = bets.create!(player: big_blind_player, amount: big_blind_amount)
-      update!(current_actor: relative_player(3), current_bet: big_blind_bet)
+      betting_round = create_betting_round!(player: big_blind_player, amount: big_blind_amount, kind: "blinds")
+      betting_round.create_bet!(player: small_blind_player, amount: small_blind_amount)
+      update!(current_actor: relative_player(3))
       self
     end
+  end
+
+  def next!(player:, params:)
+    ActiveRecord::Base.transaction do
+      HandAction.act!(player: player, hand: self, params: params)
+
+      if next_round?
+        if remaining_players.count == 1 || round + 1 > 3
+          table.distribute_pot!(winners: winners, pot: current_pot)
+          update!(round: 4, current_actor: nil, current_betting_round: nil)
+        else
+          update!(round: round + 1, current_actor: remaining_first_player, current_betting_round: nil)
+        end
+      else
+        update!(current_actor: next_player)
+      end
+    end
+  end
+
+  def create_betting_round!(player:, amount:, kind: nil)
+    betting_round = betting_rounds.create!(kind: kind, hand_round: round, amount: amount)
+    player_hand   = player_hands.find_by(player_id: player.id)
+    bet_amount    = amount - player_hand.current_round_bets_sum
+    betting_round.initial_bet = betting_round.create_bet!(player: player, amount: bet_amount)
+    betting_round.save!
+    update!(current_betting_round: betting_round)
+    return betting_round
+  end
+
+  def current_bet_amount
+    current_betting_round.try(:amount).to_i
   end
 
   def current_pot
@@ -39,7 +70,7 @@ class Hand < ApplicationRecord
   end
 
   def minimum_raise
-    big_blind_amount + current_bet.try(:amount).to_i
+    big_blind_amount + current_bet_amount
   end
 
   def minimum_bet
@@ -56,23 +87,6 @@ class Hand < ApplicationRecord
 
   def next_hand
     table.hands.where("hands.id > ?", id).order(:id).first
-  end
-
-  def next!(player:, params:)
-    ActiveRecord::Base.transaction do
-      HandAction.act!(player: player, hand: self, params: params)
-
-      if next_round?
-        if remaining_players.count == 1 || round + 1 > 3
-          table.distribute_pot!(winners: winners, pot: current_pot)
-          update!(round: 4, current_actor: nil, current_bet: nil)
-        else
-          update!(round: round + 1, current_actor: remaining_first_player, current_bet: nil)
-        end
-      else
-        update!(current_actor: next_player)
-      end
-    end
   end
 
   def won_by_fold?
@@ -110,7 +124,7 @@ class Hand < ApplicationRecord
   end
 
   def current_bettor
-    current_bet.try(:player)
+    current_betting_round.try(:bettor)
   end
 
   def remaining_first_player
@@ -124,7 +138,7 @@ class Hand < ApplicationRecord
   def next_player
     next_player = (bettor_relative_players - folded_players - acted_players - [current_actor]).first
 
-    if round.zero? && bets.where(player_id: big_blind_player).count == 1 && !big_blind_folded? && current_bettor == big_blind_player
+    if current_betting_round.try(:blinds?)
       if current_actor == big_blind_player
         nil
       elsif next_player.blank?

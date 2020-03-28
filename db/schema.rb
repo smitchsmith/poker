@@ -10,15 +10,25 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2020_03_21_152157) do
+ActiveRecord::Schema.define(version: 2020_03_28_022920) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
   create_table "bets", force: :cascade do |t|
-    t.integer "hand_id"
-    t.integer "player_id"
     t.integer "amount"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.integer "player_id"
+    t.integer "betting_round_id"
+  end
+
+  create_table "betting_rounds", force: :cascade do |t|
+    t.integer "hand_id"
+    t.integer "initial_bet_id"
+    t.integer "amount"
+    t.integer "hand_round"
+    t.string "kind"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
   end
@@ -30,8 +40,8 @@ ActiveRecord::Schema.define(version: 2020_03_21_152157) do
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
     t.integer "current_actor_id"
-    t.integer "current_bet_id"
     t.integer "round", default: 0
+    t.integer "current_betting_round_id"
   end
 
   create_table "player_hands", force: :cascade do |t|

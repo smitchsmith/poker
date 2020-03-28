@@ -18,12 +18,11 @@ class HandAction < OpenStruct
   end
 
   def call
-    hand.bets.create!(player: player, amount: player_hand.call_amount)
+    hand.current_betting_round.create_bet!(player: player, amount: player_hand.call_amount)
   end
 
   def bet
-    new_bet = hand.bets.create!(player: player, amount: bet_amount)
-    hand.update!(current_bet: new_bet)
+    hand.create_betting_round!(player: player, amount: bet_amount)
   end
 
   def raise_bet

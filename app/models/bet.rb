@@ -1,16 +1,19 @@
-# hand, player, amount
+# amount, betting_round, player
 
 class Bet < ApplicationRecord
   validate :player_has_funds
   after_create :deduct_from_player
 
-  belongs_to :hand
+  belongs_to :betting_round
   belongs_to :player, class_name: "User"
+
+  delegate :hand, :hand_id, to: :betting_round
+  delegate :table, :table_id, to: :hand
 
   private
 
   def table_player
-    @table_player ||= TablePlayer.find_by(table_id: hand.table_id, player_id: player_id)
+    @table_player ||= TablePlayer.find_by(table_id: table_id, player_id: player_id)
   end
 
   def deduct_from_player

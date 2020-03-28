@@ -6,7 +6,7 @@
         <div class="col border-bottom"><%= player_hand.status %></div>
         <div class="w-100"></div>
         <div class="col border-right">Bank: ¢<%= player_hand.player_balance %></div>
-        <div class="col">Pot: ¢<%= player_hand.bets_sum %></div>
+        <div class="col">Round: ¢<%= player_hand.current_round_bets_sum %></div>
       </div>
     <% end %>
   </div>
@@ -44,7 +44,7 @@
       <div class="col">
         <h5 class="text-center mb-4">Actions</h5>
         <% if @current_player_hand.current_actor? %>
-          <% if @hand.current_bet.present? && @current_player_hand.call_amount.nonzero? %>
+          <% if @hand.current_betting_round.present? && @current_player_hand.call_amount.nonzero? %>
             <div class="mb-3">
               <%= simple_form_for @hand do |f| %>
                 <%= f.hidden_field :action, value: "fold" %>
@@ -126,7 +126,7 @@
               <div class="mb-3">
                 <button type="button" class="btn btn-block btn-secondary" disabled>Folded</button>
               </div>
-            <% elsif @hand.current_bet.present? %>
+            <% elsif @hand.current_betting_round.present? %>
               <div class="mb-3">
                 <button type="button" class="btn btn-block btn-secondary" disabled>Fold</button>
               </div>

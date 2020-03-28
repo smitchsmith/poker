@@ -6,6 +6,7 @@ class PlayerHand < ApplicationRecord
 
   delegate :balance, to: :table_player
   delegate :name, to: :player, prefix: true
+  delegate :current_betting_round, to: :hand
 
   def call_amount
     hand.current_player_bet - bets_sum
@@ -13,6 +14,10 @@ class PlayerHand < ApplicationRecord
 
   def bets_sum
     bets.pluck(:amount).sum
+  end
+
+  def current_round_bets_sum
+    bets.joins(:betting_round).where(betting_rounds: {hand_round: hand.round}).pluck(:amount).sum
   end
 
   def current_actor?
@@ -45,9 +50,13 @@ class PlayerHand < ApplicationRecord
       elsif current_actor?
         "..."
       elsif current_bettor?
-        "Bet #{hand.current_bet.amount}"
+        if hand.betting_rounds.where(hand_round: hand.round).count == 1
+          "Bet ¢#{current_betting_round.amount}" unless current_betting_round.try(:blinds?)
+        else
+          "Raised to ¢#{current_betting_round.amount}"
+        end
       elsif has_acted?
-        if hand.current_bet.present?
+        if current_betting_round.present?
           "Called"
         else
           "Checked"
@@ -97,7 +106,7 @@ class PlayerHand < ApplicationRecord
   private
 
   def bets
-    Bet.where(hand_id: hand_id, player_id: player_id)
+    Bet.joins(:betting_round).where(player_id: player_id, betting_rounds: {hand_id: hand_id})
   end
 
   def table_player
