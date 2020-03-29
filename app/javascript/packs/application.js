@@ -7,7 +7,7 @@ require("@rails/ujs").start()
 require("turbolinks").start()
 require("@rails/activestorage").start()
 require("channels")
-require("jquery")
+var $ = require("jquery")
 // require("popper")
 
 // Uncomment to copy all static images under ../images to the output folder and reference
@@ -16,3 +16,23 @@ require("jquery")
 //
 // const images = require.context('../images', true)
 // const imagePath = (name) => images(name, true)
+
+$(function () {
+  const fixRaiseButtonName = function () {
+    const input = $(".raise-form #bet_amount")
+    const button = input.closest("form").find("input[type=submit]")
+    const maxBetAmount = parseInt(input.attr("max"))
+    const currentBetAmount = parseInt(input.val())
+    if (currentBetAmount >= maxBetAmount) {
+      button.val("All In")
+    } else {
+      button.val("Raise To")
+    }
+  }
+
+  $(".raise-form #bet_amount").on("input", function () {
+    fixRaiseButtonName()
+  })
+
+  fixRaiseButtonName()
+})

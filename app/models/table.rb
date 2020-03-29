@@ -15,11 +15,10 @@ class Table < ApplicationRecord
     end
   end
 
-  def distribute_pot!(winners:, pot:)
-    winning_table_players = table_players.select { |table_player| winners.include?(table_player.player) }
-    winning_pot_amount    = pot / winners.count
-    winning_table_players.each do |table_player|
-      table_player.update!(balance: table_player.balance + winning_pot_amount)
+  def distribute_pot!(winners_with_amounts)
+    winners_with_amounts.each do |player, amount|
+      table_player = table_players.detect { |table_player| table_player.player == player }
+      table_player.update!(balance: table_player.balance + amount)
     end
   end
 

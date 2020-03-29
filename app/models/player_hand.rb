@@ -9,7 +9,12 @@ class PlayerHand < ApplicationRecord
   delegate :current_betting_round, to: :hand
 
   def call_amount
-    hand.current_player_bet - bets_sum
+    amount = hand.current_player_bet - bets_sum
+    balance > amount ? amount : balance
+  end
+
+  def calling_brings_all_in?
+    call_amount == balance
   end
 
   def bets_sum
@@ -30,22 +35,32 @@ class PlayerHand < ApplicationRecord
   end
 
   def result
-    "#{best_poker_hand.rank} (#{best_poker_hand.cards})"
+    "#{best_poker_hand.rank} (#{cards.join(", ")})"
   end
 
-  def winner_status
-    if hand.won_by_fold?
-      "Winner!"
+  def final_status
+    if hand.winners.include?(player)
+      if hand.one_unfolded_player?
+        "Won ¢#{hand.winners_with_amounts[player]}"
+      else
+        "Won ¢#{hand.winners_with_amounts[player]}\n#{result}"
+      end
     else
-      "Winner: #{result}"
+      if folded?
+        "Folded"
+      else
+        result
+      end
     end
   end
 
   def status
     if hand.finished?
-      winner_status if hand.winners.include?(player)
+      final_status
     else
-      if folded?
+      if all_in?
+        "All In"
+      elsif folded?
         "Folded"
       elsif current_actor?
         "..."
@@ -93,14 +108,22 @@ class PlayerHand < ApplicationRecord
     hand.big_blind_player == player
   end
 
-  def player_balance
-    @player_balance ||= table_player.balance
-  end
-
   def best_poker_hand
     @best_poker_hand ||= (cards + hand.cards).combination(5).map do |combination|
       PokerHand.new(combination)
     end.sort.last
+  end
+
+  def bring_to_all_in_amount
+    current_round_bets_sum + balance
+  end
+
+  def all_in?
+    all_in_bet.present?
+  end
+
+  def all_in_bet
+    bets.where(kind: "all_in").first
   end
 
   private

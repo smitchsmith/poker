@@ -12,12 +12,13 @@ class Hand < ApplicationRecord
   has_many :bets, through: :betting_rounds
 
   delegate :name, to: :table, prefix: true
-  delegate :players, :small_blind_amount, :big_blind_amount, to: :table
+  delegate :players, :table_players, :small_blind_amount, :big_blind_amount, to: :table
 
   def setup!(cards)
     ActiveRecord::Base.transaction do
-      players.each do |player|
-        player_hands.create!(player: player, cards: cards.shift(2))
+      table_players.each do |table_player|
+        next if table_player.balance.zero?
+        player_hands.create!(player: table_player.player, cards: cards.shift(2))
       end
 
       betting_round = create_betting_round!(player: big_blind_player, amount: big_blind_amount, kind: "blinds")
@@ -32,8 +33,8 @@ class Hand < ApplicationRecord
       HandAction.act!(player: player, hand: self, params: params)
 
       if next_round?
-        if remaining_players.count == 1 || round + 1 > 3
-          table.distribute_pot!(winners: winners, pot: current_pot)
+        if betting_finished? || round + 1 > 3
+          table.distribute_pot!(winners_with_amounts)
           update!(round: 4, current_actor: nil, current_betting_round: nil)
         else
           update!(round: round + 1, current_actor: remaining_first_player, current_betting_round: nil)
@@ -89,12 +90,16 @@ class Hand < ApplicationRecord
     table.hands.where("hands.id > ?", id).order(:id).first
   end
 
-  def won_by_fold?
+  def betting_finished?
+    one_unfolded_player? || (((remaining_players - all_in_players).count <= 1) && next_player.blank?)
+  end
+
+  def one_unfolded_player?
     remaining_players.count == 1
   end
 
   def next_round?
-    next_player.blank? || remaining_players.count == 1
+    next_player.blank? || betting_finished?
   end
 
   def visible_cards
@@ -105,9 +110,12 @@ class Hand < ApplicationRecord
     end
   end
 
+  def winners_with_amounts
+    PotSplitter.new(remaining_player_hands, current_pot).winners_with_amounts
+  end
+
   def winners
-    best_poker_hand = remaining_player_hands.map(&:best_poker_hand).sort.last
-    remaining_player_hands.select { |player_hand| player_hand.best_poker_hand == best_poker_hand }.map(&:player)
+    winners_with_amounts.keys
   end
 
   def remaining_player_hands
@@ -119,9 +127,6 @@ class Hand < ApplicationRecord
     bettor_relative_players[0...actor_index] - folded_players
   end
 
-  def folded_players
-    player_hands.select(&:folded?).map(&:player)
-  end
 
   def current_bettor
     current_betting_round.try(:bettor)
@@ -136,7 +141,7 @@ class Hand < ApplicationRecord
   end
 
   def next_player
-    next_player = (bettor_relative_players - folded_players - acted_players - [current_actor]).first
+    next_player = (bettor_relative_players - folded_players - acted_players - all_in_players - [current_actor]).first
 
     if current_betting_round.try(:blinds?)
       if current_actor == big_blind_player
@@ -157,6 +162,14 @@ class Hand < ApplicationRecord
 
   def remaining_players
     dealer_relative_players - folded_players
+  end
+
+  def folded_players
+    player_hands.select(&:folded?).map(&:player)
+  end
+
+  def all_in_players
+    player_hands.select(&:all_in?).map(&:player)
   end
 
   def bettor_relative_players

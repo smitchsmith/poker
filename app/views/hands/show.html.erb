@@ -1,13 +1,30 @@
 <div class="row mt-3">
   <div class="col">
-    <% @hand.player_hands.order(:player_id).each do |player_hand| %>
-      <div class="row border mb-3 mx-2">
-        <div class="col border-right border-bottom"><%= player_hand.name_with_position %></div>
-        <div class="col border-bottom"><%= player_hand.status %></div>
-        <div class="w-100"></div>
-        <div class="col border-right">Bank: ¢<%= player_hand.player_balance %></div>
-        <div class="col">Round: ¢<%= player_hand.current_round_bets_sum %></div>
-      </div>
+    <% @hand.table_players.order(:player_id).each do |table_player| %>
+      <% player_hand = @hand.player_hands.find_by(player_id: table_player.player_id) %>
+      <% if player_hand.present? %>
+        <div class="row border mb-3 mx-2">
+          <div class="col border-right border-bottom"><%= player_hand.name_with_position %></div>
+          <div class="col border-bottom"><%= player_hand.status.to_s.gsub("\n", "<br>").html_safe %></div>
+          <div class="w-100"></div>
+          <div class="col border-right">Bank: ¢<%= player_hand.balance %></div>
+          <div class="col">
+            <% if @hand.finished? %>
+              Bet ¢<%= player_hand.bets_sum %>
+            <% else %>
+              Round: ¢<%= player_hand.current_round_bets_sum %>  
+            <% end %>
+          </div>
+        </div>
+      <% else %>
+        <div class="row border mb-3 mx-2">
+          <div class="col border-right border-bottom"><%= table_player.player_name %></div>
+          <div class="col border-bottom">Sitting Out</div>
+          <div class="w-100"></div>
+          <div class="col border-right">Bank: ¢<%= table_player.balance %></div>
+          <div class="col"></div>
+        </div>
+      <% end %>
     <% end %>
   </div>
   <div class="col-8">
@@ -30,123 +47,151 @@
             </div>
       </div>
     </div>
-    <div class="row">
-      <div class="col">
-        <h5 class="text-center mb-4">Your Cards</h5>
-        <div class="row justify-content-center">
-            <% @current_player_hand.cards.each do |card| %>
-              <div class="col-4">
-                <%= image_tag "cards/#{card}.png", class: "player-card border" %>
-              </div>
-            <% end %>
+    <% if @current_player_hand.present? %>
+      <div class="row">
+        <div class="col">
+          <h5 class="text-center mb-4">Your Cards</h5>
+          <div class="row justify-content-center">
+              <% @current_player_hand.cards.each do |card| %>
+                <div class="col-4">
+                  <%= image_tag "cards/#{card}.png", class: "player-card border" %>
+                </div>
+              <% end %>
+          </div>
         </div>
-      </div>
-      <div class="col">
-        <h5 class="text-center mb-4">Actions</h5>
-        <% if @current_player_hand.current_actor? %>
-          <% if @hand.current_betting_round.present? && @current_player_hand.call_amount.nonzero? %>
-            <div class="mb-3">
-              <%= simple_form_for @hand do |f| %>
-                <%= f.hidden_field :action, value: "fold" %>
-                <%= f.button :submit, "Fold", class: "btn btn-block btn-danger" %>
-              <% end %>
-            </div>
-            <div class="mb-3">
-              <%= simple_form_for @hand do |f| %>
-                <div class="form-row">
-                  <div class="col-9">
-                    <%= f.hidden_field :action, value: "call" %>
-                    <%= f.button :submit, "Call", class: "btn btn-block btn-success mr-3" %>
-                  </div>
-                  <div class="col-3">
-                    <%= simple_fields_for :bet do |o| %>
-                      <%= o.input :amount, as: :integer, required: false, label: false, input_html: {class: "form-control", value: @current_player_hand.call_amount, disabled: true} %>
-                    <% end %>
-                  </div>
-                </div>
-              <% end %>
-            </div>
-            <div class="mb-3">
-              <%= simple_form_for @hand do |f| %>
-                <div class="form-row">
-                  <div class="col-9">
-                    <%= f.hidden_field :action, value: "raise_bet" %>
-                    <%= f.button :submit, "Raise", class: "btn btn-block btn-primary mr-3" %>
-                  </div>
-                  <div class="col-3">
-                    <%= simple_fields_for :bet do |o| %>
-                      <%= o.input :amount, as: :integer, required: false, label: false, input_html: {class: "form-control", step: @hand.big_blind_amount, value: @hand.minimum_raise, min: @hand.minimum_raise, max: @current_player_hand.balance} %>
-                    <% end %>
-                  </div>
-                </div>
-              <% end %>
-            </div>
-          <% else %>
-            <div class="mb-3">
-              <%= simple_form_for @hand do |f| %>
-                <%= f.hidden_field :action, value: "check" %>
-                <%= f.button :submit, "Check", class: "btn btn-block btn-warning" %>
-              <% end %>
-            </div>
-            <div class="mb-3">
-              <%= simple_form_for @hand do |f| %>
-                <div class="form-row">
-                  <div class="col-9">
-                    <%= f.hidden_field :action, value: "bet" %>
-                    <%= f.button :submit, "Bet", class: "btn btn-block btn-primary mr-3" %>
-                  </div>
-                  <div class="col-3">
-                    <%= simple_fields_for :bet do |o| %>
-                      <%= o.input :amount, as: :integer, required: false, label: false, input_html: {class: "form-control", step: @hand.big_blind_amount, value: @hand.minimum_bet, min: @hand.minimum_bet, max: @current_player_hand.balance} %>
-                    <% end %>
-                  </div>
-                </div>
-              <% end %>
-            </div>
-          <% end %>
-        <% else %>
-          <% if @hand.finished? %>
-              <% if @hand.next_hand_dealt? %>
-                <div class="mb-3">
-                  <%= link_to "Go To Next Hand", hand_path(@hand.next_hand.id), class: "btn btn-block btn-primary" %>
-                </div>
-              <% else %>
-                <% if @current_player_hand.small_blind? %>
-                  <div class="mb-3">
-                    <%= link_to "Deal Next Hand", deal_cards_table_path(@hand.table_id), method: :post, class: "btn btn-block btn-primary" %>
-                  </div>
-                <% else %>
-                  <div class="mb-3">
-                    <button type="button" class="btn btn-block btn-secondary" disabled>Waiting For Deal</button>
+        <div class="col">
+          <h5 class="text-center mb-4">Actions</h5>
+          <% if @current_player_hand.current_actor? %>
+            <% if @hand.current_betting_round.present? && @current_player_hand.call_amount.nonzero? %>
+              <div class="mb-3">
+                <%= simple_form_for @hand do |f| %>
+                  <%= f.hidden_field :action, value: "fold" %>
+                  <%= f.button :submit, "Fold", class: "btn btn-block btn-danger" %>
+                <% end %>
+              </div>
+              <div class="mb-3">
+                <%= simple_form_for @hand do |f| %>
+                  <div class="form-row">
+                    <div class="col-9">
+                      <%= f.hidden_field :action, value: "call" %>
+                      <% if @current_player_hand.calling_brings_all_in? %>
+                        <%= f.button :submit, "All In", class: "btn btn-block btn-success mr-3" %>
+                      <% else %>
+                        <%= f.button :submit, "Call", class: "btn btn-block btn-success mr-3" %>
+                      <% end %>
+                    </div>
+                    <div class="col-3">
+                      <%= simple_fields_for :bet do |o| %>
+                        <%= o.input :amount, as: :integer, required: false, label: false, input_html: {class: "form-control", value: @current_player_hand.call_amount, disabled: true} %>
+                      <% end %>
+                    </div>
                   </div>
                 <% end %>
+              </div>
+              <% unless @current_player_hand.calling_brings_all_in? %>
+                <div class="mb-3">
+                  <%= simple_form_for @hand do |f| %>
+                    <div class="form-row raise-form">
+                      <div class="col-9">
+                        <%= f.hidden_field :action, value: "raise_bet" %>
+                        <%= f.button :submit, "Raise To", class: "btn btn-block btn-primary mr-3" %>
+                      </div>
+                      <div class="col-3">
+                        <%= simple_fields_for :bet do |o| %>
+                          <%= o.input :amount, as: :integer, required: false, label: false, input_html: {class: "form-control", step: @hand.small_blind_amount, value: @hand.minimum_raise, min: @hand.minimum_raise, max: @current_player_hand.bring_to_all_in_amount} %>
+                        <% end %>
+                      </div>
+                    </div>
+                  <% end %>
+                </div>
               <% end %>
-          <% else %>
-            <% if @current_player_hand.folded? %>
-              <div class="mb-3">
-                <button type="button" class="btn btn-block btn-secondary" disabled>Folded</button>
-              </div>
-            <% elsif @hand.current_betting_round.present? %>
-              <div class="mb-3">
-                <button type="button" class="btn btn-block btn-secondary" disabled>Fold</button>
-              </div>
-              <div class="mb-3">
-                <button type="button" class="btn btn-block btn-secondary" disabled>Call</button>
-              </div>
-              <div class="mb-3">
-                <button type="button" class="btn btn-block btn-secondary" disabled>Raise</button>
-              </div>
             <% else %>
               <div class="mb-3">
-                <button type="button" class="btn btn-block btn-secondary" disabled>Check</button>
+                <%= simple_form_for @hand do |f| %>
+                  <%= f.hidden_field :action, value: "check" %>
+                  <%= f.button :submit, "Check", class: "btn btn-block btn-warning" %>
+                <% end %>
               </div>
-              <div class="mb-3">
-                <button type="button" class="btn btn-block btn-secondary" disabled>Bet</button>
-              </div>
+              <% if @hand.current_betting_round.try(:blinds?) && @current_player_hand.big_blind? %>
+                <div class="mb-3">
+                  <%= simple_form_for @hand do |f| %>
+                    <div class="form-row raise-form">
+                      <div class="col-9">
+                        <%= f.hidden_field :action, value: "raise_bet" %>
+                        <%= f.button :submit, "Raise To", class: "btn btn-block btn-primary mr-3" %>
+                      </div>
+                      <div class="col-3">
+                        <%= simple_fields_for :bet do |o| %>
+                          <%= o.input :amount, as: :integer, required: false, label: false, input_html: {class: "form-control", step: @hand.small_blind_amount, value: @hand.minimum_raise, min: @hand.minimum_raise, max: @current_player_hand.bring_to_all_in_amount} %>
+                        <% end %>
+                      </div>
+                    </div>
+                  <% end %>
+                </div>
+              <% else %>
+                <div class="mb-3">
+                  <%= simple_form_for @hand do |f| %>
+                    <div class="form-row">
+                      <div class="col-9">
+                        <%= f.hidden_field :action, value: "bet" %>
+                        <%= f.button :submit, "Bet", class: "btn btn-block btn-primary mr-3" %>
+                      </div>
+                      <div class="col-3">
+                        <%= simple_fields_for :bet do |o| %>
+                          <%= o.input :amount, as: :integer, required: false, label: false, input_html: {class: "form-control", step: @hand.small_blind_amount, value: @hand.minimum_bet, min: @hand.minimum_bet, max: @current_player_hand.balance} %>
+                        <% end %>
+                      </div>
+                    </div>
+                  <% end %>
+                </div>
+              <% end %>
+            <% end %>
+          <% else %>
+            <% if @hand.finished? %>
+                <% if @hand.next_hand_dealt? %>
+                  <div class="mb-3">
+                    <%= link_to "Go To Next Hand", hand_path(@hand.next_hand.id), class: "btn btn-block btn-primary" %>
+                  </div>
+                <% else %>
+                  <% if @current_player_hand.small_blind? %>
+                    <div class="mb-3">
+                      <%= link_to "Deal Next Hand", deal_cards_table_path(@hand.table_id), method: :post, class: "btn btn-block btn-primary" %>
+                    </div>
+                  <% else %>
+                    <div class="mb-3">
+                      <button type="button" class="btn btn-block btn-secondary" disabled>Waiting For Deal</button>
+                    </div>
+                  <% end %>
+                <% end %>
+            <% else %>
+              <% if @current_player_hand.folded? %>
+                <div class="mb-3">
+                  <button type="button" class="btn btn-block btn-secondary" disabled>Folded</button>
+                </div>
+              <% elsif @hand.current_betting_round.present? %>
+                <div class="mb-3">
+                  <button type="button" class="btn btn-block btn-secondary" disabled>Fold</button>
+                </div>
+                <div class="mb-3">
+                  <button type="button" class="btn btn-block btn-secondary" disabled>Call</button>
+                </div>
+                <div class="mb-3">
+                  <button type="button" class="btn btn-block btn-secondary" disabled>Raise</button>
+                </div>
+              <% else %>
+                <div class="mb-3">
+                  <button type="button" class="btn btn-block btn-secondary" disabled>Check</button>
+                </div>
+                <div class="mb-3">
+                  <button type="button" class="btn btn-block btn-secondary" disabled>Bet</button>
+                </div>
+              <% end %>
             <% end %>
           <% end %>
-        <% end %>
+        </div>
       </div>
-    </div>
+    <% else %>
+      <h5 class="text-center mb-4">Sitting Out</h5>
+    <% end %>
   </div>
 </div>

@@ -1,7 +1,7 @@
-# amount, betting_round, player
+# amount, kind, betting_round, player
 
 class Bet < ApplicationRecord
-  validate :player_has_funds
+  validate :player_has_funds, on: :create
   after_create :deduct_from_player
 
   belongs_to :betting_round
@@ -18,6 +18,7 @@ class Bet < ApplicationRecord
 
   def deduct_from_player
     table_player.update!(balance: table_player.balance - amount)
+    update!(kind: "all_in") if table_player.balance.zero?
   end
 
   def player_has_funds
