@@ -1,0 +1,15 @@
+<div class="mb-3">
+  <%= simple_form_for @hand do |f| %>
+    <div class="form-row raise-form">
+      <div class="col-9">
+        <%= f.hidden_field :action, value: "raise_bet" %>
+        <%= f.button :submit, "Raise To", class: "btn btn-block btn-primary mr-3" %>
+      </div>
+      <div class="col-3">
+        <%= simple_fields_for :bet do |o| %>
+          <%= o.input :amount, as: :integer, required: false, label: false, input_html: {class: "form-control", step: @hand.small_blind_amount, value: @hand.minimum_raise, min: @hand.minimum_raise, max: @current_player_hand.bring_to_all_in_amount} %>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+</div>

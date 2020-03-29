@@ -41,11 +41,10 @@ class Table < ApplicationRecord
   private
 
   def next_dealer
-    return players.first if current_dealer.blank?
-    current_hand.small_blind_player
-  end
-
-  def current_dealer
-    current_hand.try(:dealer)
+    if current_hand.present?
+      current_hand.small_blind_player
+    else
+      players.first
+    end
   end
 end

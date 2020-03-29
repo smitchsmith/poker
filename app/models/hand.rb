@@ -13,6 +13,7 @@ class Hand < ApplicationRecord
 
   delegate :name, to: :table, prefix: true
   delegate :players, :table_players, :small_blind_amount, :big_blind_amount, to: :table
+  alias :minimum_bet :big_blind_amount
 
   def setup!(cards)
     ActiveRecord::Base.transaction do
@@ -37,7 +38,7 @@ class Hand < ApplicationRecord
           table.distribute_pot!(winners_with_amounts)
           update!(round: 4, current_actor: nil, current_betting_round: nil)
         else
-          update!(round: round + 1, current_actor: remaining_first_player, current_betting_round: nil)
+          update!(round: round + 1, current_actor: first_actor, current_betting_round: nil)
         end
       else
         update!(current_actor: next_player)
@@ -55,51 +56,16 @@ class Hand < ApplicationRecord
     return betting_round
   end
 
-  def current_bet_amount
-    current_betting_round.try(:amount).to_i
+  def winners_with_amounts
+    PotSplitter.new(remaining_player_hands, pot_amount).winners_with_amounts
   end
 
-  def current_pot
-    bets.pluck(:amount).sum
-  end
-
-  def current_player_bet
-    player_hands.each_with_object({}) do |player_hand, h|
-      h[player_hand.player_id] ||= 0
-      h[player_hand.player_id] += player_hand.bets_sum
-    end.values.max
-  end
-
-  def minimum_raise
-    big_blind_amount + current_bet_amount
-  end
-
-  def minimum_bet
-    big_blind_amount
+  def winners
+    winners_with_amounts.keys
   end
 
   def finished?
     round == 4
-  end
-
-  def next_hand_dealt?
-    next_hand.present?
-  end
-
-  def next_hand
-    table.hands.where("hands.id > ?", id).order(:id).first
-  end
-
-  def betting_finished?
-    one_unfolded_player? || (((remaining_players - all_in_players).count <= 1) && next_player.blank?)
-  end
-
-  def one_unfolded_player?
-    remaining_players.count == 1
-  end
-
-  def next_round?
-    next_player.blank? || betting_finished?
   end
 
   def visible_cards
@@ -110,54 +76,37 @@ class Hand < ApplicationRecord
     end
   end
 
-  def winners_with_amounts
-    PotSplitter.new(remaining_player_hands, current_pot).winners_with_amounts
+  def pot_amount
+    bets.pluck(:amount).sum
   end
 
-  def winners
-    winners_with_amounts.keys
+  def current_bet_amount
+    current_betting_round.try(:amount).to_i
   end
-
-  def remaining_player_hands
-    player_hands.select { |player_hand| remaining_players.include?(player_hand.player) }
-  end
-
-  def acted_players
-    actor_index = bettor_relative_players.index(current_actor)
-    bettor_relative_players[0...actor_index] - folded_players
-  end
-
 
   def current_bettor
     current_betting_round.try(:bettor)
   end
 
-  def remaining_first_player
-    (remaining_players - [dealer]).first
+  def largest_bets_sum
+    player_hands.map(&:bets_sum).max
   end
 
-  def big_blind_folded?
-    folded_players.include?(big_blind_player)
-  end
-
-  def next_player
-    next_player = (bettor_relative_players - folded_players - acted_players - all_in_players - [current_actor]).first
-
-    if current_betting_round.try(:blinds?)
-      if current_actor == big_blind_player
-        nil
-      elsif next_player.blank?
-        big_blind_player
-      else
-        next_player
-      end
+  def minimum_raise
+    if current_betting_round.present?
+      current_betting_round.amount + current_betting_round.amount_raised_by
     else
-      next_player
+      minimum_bet
     end
   end
 
-  def relative_player(relative_position)
-    dealer_relative_players[relative_position % players.count]
+  def one_unfolded_player?
+    remaining_players.count == 1
+  end
+
+  def acted_players
+    actor_index = bettor_relative_players.index(current_actor)
+    bettor_relative_players[0...actor_index] - folded_players
   end
 
   def remaining_players
@@ -170,32 +119,6 @@ class Hand < ApplicationRecord
 
   def all_in_players
     player_hands.select(&:all_in?).map(&:player)
-  end
-
-  def bettor_relative_players
-    return small_blind_relative_players if current_bettor.blank?
-
-    @bettor_relative_players ||= players.to_a.dup.tap do |relative_players|
-      until relative_players.first == current_bettor
-        relative_players.push relative_players.shift
-      end
-    end
-  end
-
-  def small_blind_relative_players
-    @small_blind_relative_players ||= players.to_a.dup.tap do |relative_players|
-      until relative_players.first == small_blind_player
-        relative_players.push relative_players.shift
-      end
-    end
-  end
-
-  def dealer_relative_players
-    @dealer_relative_players ||= players.to_a.dup.tap do |relative_players|
-      until relative_players.first == dealer
-        relative_players.push relative_players.shift
-      end
-    end
   end
 
   def small_blind_player
@@ -214,6 +137,64 @@ class Hand < ApplicationRecord
         relative_player(1)
       else
         relative_player(2)
+      end
+    end
+  end
+
+  def next_hand
+    table.hands.where("hands.id > ?", id).order(:id).first
+  end
+
+  private
+
+  def next_round?
+    next_player.blank? || betting_finished?
+  end
+
+  def betting_finished?
+    one_unfolded_player? || (((remaining_players - all_in_players).count <= 1) && next_player.blank?)
+  end
+
+  def first_actor
+    (remaining_players - [dealer]).first
+  end
+
+  def next_player
+    next_player = (bettor_relative_players - folded_players - acted_players - all_in_players - [current_actor]).first
+
+    if current_betting_round.try(:blinds?)
+      if current_actor == big_blind_player
+        nil
+      elsif next_player.blank?
+        big_blind_player
+      else
+        next_player
+      end
+    else
+      next_player
+    end
+  end
+
+  def remaining_player_hands
+    player_hands.select { |player_hand| remaining_players.include?(player_hand.player) }
+  end
+
+  def relative_player(relative_position)
+    dealer_relative_players[relative_position % players.count]
+  end
+
+  def bettor_relative_players
+    @bettor_relative_players ||= players.to_a.dup.tap do |relative_players|
+      until relative_players.first == (current_bettor || small_blind_player)
+        relative_players.push relative_players.shift
+      end
+    end
+  end
+
+  def dealer_relative_players
+    @dealer_relative_players ||= players.to_a.dup.tap do |relative_players|
+      until relative_players.first == dealer
+        relative_players.push relative_players.shift
       end
     end
   end

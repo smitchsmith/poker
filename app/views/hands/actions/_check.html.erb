@@ -1,0 +1,6 @@
+<div class="mb-3">
+  <%= simple_form_for @hand do |f| %>
+    <%= f.hidden_field :action, value: "check" %>
+    <%= f.button :submit, "Check", class: "btn btn-block btn-warning" %>
+  <% end %>
+</div>
