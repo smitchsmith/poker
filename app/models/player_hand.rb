@@ -62,63 +62,11 @@ class PlayerHand < ApplicationRecord
     hand.big_blind_player == player
   end
 
+  def muck?
+    hand.winners.include?(player) && hand.one_unfolded_player?
+  end
+
   def status
-    if hand.finished?
-      final_status
-    else
-      current_status
-    end
-  end
-
-  def name_with_position
-    position = if dealer?
-      "D"
-    elsif small_blind?
-      "SB"
-    elsif big_blind?
-      "BB"
-    end
-
-    position.present? ? "#{player_name} (#{position})" : player_name
-  end
-
-  def best_poker_hand
-    @best_poker_hand ||= (cards + hand.cards).combination(5).map do |combination|
-      PokerHand.new(combination)
-    end.sort.last
-  end
-
-  private
-
-  def bets
-    Bet.joins(:betting_round).where(player_id: player_id, betting_rounds: {hand_id: hand_id})
-  end
-
-  def table_player
-    TablePlayer.find_by(table_id: hand.table_id, player_id: player_id)
-  end
-
-  def result
-    "#{best_poker_hand.rank} (#{cards.join(", ")})"
-  end
-
-  def final_status
-    if hand.winners.include?(player)
-      if hand.one_unfolded_player?
-        "Won ¢#{hand.winners_with_amounts[player]}"
-      else
-        "Won ¢#{hand.winners_with_amounts[player]}\n#{result}"
-      end
-    else
-      if folded?
-        "Folded"
-      else
-        result
-      end
-    end
-  end
-
-  def current_status
     if all_in?
       "All In"
     elsif folded?
@@ -138,5 +86,45 @@ class PlayerHand < ApplicationRecord
         "Checked"
       end
     end
+  end
+
+  def winnings
+    amount = hand.winners_with_amounts[player].to_i - bets_sum
+    sign   = amount.negative? ? "-" : "+"
+    "#{sign} ¢#{amount.abs}"
+  end
+
+  def name_with_position
+    position = if dealer?
+      "D"
+    elsif small_blind?
+      "SB"
+    elsif big_blind?
+      "BB"
+    end
+
+    position.present? ? "#{player_name} (#{position})" : player_name
+  end
+
+  def best_cards
+    best_poker_hand.cards.split(" ").map(&:upcase).sort_by do |card|
+      Card::FACES.index(card.first)
+    end
+  end
+
+  def best_poker_hand
+    @best_poker_hand ||= (cards + hand.cards).combination(5).map do |combination|
+      PokerHand.new(combination)
+    end.sort.last
+  end
+
+  private
+
+  def bets
+    Bet.joins(:betting_round).where(player_id: player_id, betting_rounds: {hand_id: hand_id})
+  end
+
+  def table_player
+    TablePlayer.find_by(table_id: hand.table_id, player_id: player_id)
   end
 end

@@ -2,28 +2,58 @@
   <div class="col">
     <% @hand.table_players.order(:player_id).each do |table_player| %>
       <% player_hand = @hand.player_hands.find_by(player_id: table_player.player_id) %>
-      <% if player_hand.present? %>
-        <div class="row border mb-3 mx-2">
-          <div class="col border-right border-bottom"><%= player_hand.name_with_position %></div>
-          <div class="col border-bottom"><%= player_hand.status.to_s.gsub("\n", "<br>").html_safe %></div>
-          <div class="w-100"></div>
-          <div class="col border-right">Bank: ¢<%= player_hand.balance %></div>
-          <div class="col">
-            <% if @hand.finished? %>
-              Bet ¢<%= player_hand.bets_sum %>
-            <% else %>
-              Round: ¢<%= player_hand.current_round_bets_sum %>  
+      <% if @hand.finished? %>
+        <% if player_hand.present? %>
+          <div class="row border mb-3 mx-2">
+            <div class="col border-right border-bottom"><%= player_hand.name_with_position %></div>
+            <div class="col border-bottom"><%= player_hand.winnings %></div>
+            <% unless player_hand.folded? || player_hand.muck? %>
+              <div class="w-100"></div>
+              <div class="col border-right border-bottom">
+                <%= humanize_cards(player_hand.cards) %>
+              </div>
+              <div class="col border-bottom"><%= player_hand.best_poker_hand.rank %></div>
             <% end %>
+            <div class="w-100"></div>
+            <div class="col">
+              <% if player_hand.folded? %>
+                <div class="row">
+                  <div class="mx-auto">Folded</div>
+                </div>
+              <% elsif player_hand.muck? %>
+                <div class="row">
+                  <div class="mx-auto">Winner</div>
+                </div>
+              <% else %>
+                <div class="row">
+                  <div class="mx-auto">
+                    <% player_hand.best_cards.each do |card| %>
+                      <%= image_tag "cards/#{card}.png", class: "table-card-small border" %>
+                    <% end %>
+                  </div>
+                </div>
+              <% end %>
+            </div>
           </div>
-        </div>
+        <% end %>
       <% else %>
-        <div class="row border mb-3 mx-2">
-          <div class="col border-right border-bottom"><%= table_player.player_name %></div>
-          <div class="col border-bottom">Sitting Out</div>
-          <div class="w-100"></div>
-          <div class="col border-right">Bank: ¢<%= table_player.balance %></div>
-          <div class="col"></div>
-        </div>
+        <% if player_hand.present? %>
+          <div class="row border mb-3 mx-2">
+            <div class="col border-right border-bottom"><%= player_hand.name_with_position %></div>
+            <div class="col border-bottom"><%= player_hand.status.to_s.gsub("\n", "<br>").html_safe %></div>
+            <div class="w-100"></div>
+            <div class="col border-right">Bank: ¢<%= player_hand.balance %></div>
+            <div class="col">Round: ¢<%= player_hand.current_round_bets_sum %></div>
+          </div>
+        <% else %>
+          <div class="row border mb-3 mx-2">
+            <div class="col border-right border-bottom"><%= table_player.player_name %></div>
+            <div class="col border-bottom">Sitting Out</div>
+            <div class="w-100"></div>
+            <div class="col border-right">Bank: ¢<%= table_player.balance %></div>
+            <div class="col"></div>
+          </div>
+        <% end %>
       <% end %>
     <% end %>
   </div>
