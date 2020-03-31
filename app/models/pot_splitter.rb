@@ -1,4 +1,6 @@
-class PotSplitter < Struct.new(:player_hands, :amount)
+class PotSplitter < Struct.new(:hand)
+  delegate :remaining_player_hands, :folded_player_hands, :amount, to: :hand
+
   def winners_with_amounts
     subpots.each_with_object({}) do |pot, h|
       pot.winners_with_amounts.each do |winner, amount|
@@ -12,7 +14,7 @@ class PotSplitter < Struct.new(:player_hands, :amount)
 
   def subpots
     @subpots ||= [].tap do |subpots|
-      sorted_player_hands = player_hands.sort_by(&:bets_sum)
+      sorted_player_hands = remaining_player_hands.sort_by(&:bets_sum)
       previous_player_hand = nil
       until subpots.map(&:amount).sum == amount
         if sorted_player_hands.map(&:bets_sum).uniq.count == 1
@@ -21,29 +23,25 @@ class PotSplitter < Struct.new(:player_hands, :amount)
         else
           pot_player_hands     = sorted_player_hands.dup
           current_player_hand  = sorted_player_hands.shift
-          folded_bets_amount   = folded_bets_map[current_player_hand.all_in_bet].to_i
-          pot_amount           = ((current_player_hand.bets_sum - previous_player_hand.try(:bets_sum).to_i) * pot_player_hands.count) + folded_bets_amount
+          current_amount       = current_player_hand.bets_sum
+          previous_amount      = previous_player_hand.try(:bets_sum).to_i
+          folded_bets_amount   = folded_bets_amount_for(previous_amount, current_amount)
+          pot_amount           = ((current_amount - previous_amount) * pot_player_hands.count) + folded_bets_amount
           previous_player_hand = current_player_hand
-          subpots << Pot.new(pot_player_hands, pot_amount)
+          subpots << Pot.new(pot_player_hands, pot_amount) if pot_amount > 0
         end
       end
     end
   end
 
-  def folded_bets_map
-    @folded_bets_map ||= begin
-      all_in_bets    = player_hands.flat_map(&:all_in_bet).compact.sort_by(&:id)
-      all_in_bet_ids = all_in_bets.map(&:id)
-      all_in_bets.each_with_object({}).with_index do |(bet, h), i|
-        previous_id = i == 0 ? 1 : all_in_bet_ids[i - 1]
-        folded_bets = hand.bets.where(id: previous_id..bet.id, player_id: hand.folded_players.map(&:id))
-        h[bet] = folded_bets.map(&:amount).sum
+  def folded_bets_amount_for(range_min, range_max)
+    folded_player_hands.map(&:bets_sum).map do |folded_bet_amount|
+      if folded_bet_amount > range_min
+        amount     = folded_bet_amount - range_min
+        max_amount = range_max - range_min
+        amount > max_amount ? max_amount : amount
       end
-    end
-  end
-
-  def hand
-    @hand ||= player_hands.first.hand
+    end.sum
   end
 
   class Pot < Struct.new(:player_hands, :amount)

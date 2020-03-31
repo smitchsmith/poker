@@ -57,7 +57,7 @@ class Hand < ApplicationRecord
   end
 
   def winners_with_amounts
-    PotSplitter.new(remaining_player_hands, pot_amount).winners_with_amounts
+    PotSplitter.new(self).winners_with_amounts
   end
 
   def winners
@@ -114,11 +114,19 @@ class Hand < ApplicationRecord
   end
 
   def folded_players
-    player_hands.select(&:folded?).map(&:player)
+    folded_player_hands.map(&:player)
   end
 
   def all_in_players
     player_hands.select(&:all_in?).map(&:player)
+  end
+
+  def remaining_player_hands
+    player_hands.select { |player_hand| remaining_players.include?(player_hand.player) }
+  end
+
+  def folded_player_hands
+    player_hands.select(&:folded?)
   end
 
   def small_blind_player
@@ -173,10 +181,6 @@ class Hand < ApplicationRecord
     else
       next_player
     end
-  end
-
-  def remaining_player_hands
-    player_hands.select { |player_hand| remaining_players.include?(player_hand.player) }
   end
 
   def relative_player(relative_position)
