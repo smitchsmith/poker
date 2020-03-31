@@ -15,39 +15,45 @@
 
   <body>
     <nav class="navbar navbar-expand-lg navbar-light bg-light">
-      <%= link_to "Poker", root_path, class: "navbar-brand" %>
-      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-        <span class="navbar-toggler-icon"></span>
-      </button>
+      <div class="container">
+        <%= link_to "Poker", root_path, class: "navbar-brand" %>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
 
-      <div class="collapse navbar-collapse" id="navbarSupportedContent">
-        <ul class="navbar-nav mr-auto">
-          <% if user_signed_in? %>
-            <li class="nav-item">
-              <span class="navbar-text"><%= current_user.name %></span>
-            </li>
-            <li class="nav-item">
-              <%= link_to "Logout", destroy_user_session_path, method: :delete, class: 'nav-link'  %>
-            </li>
-          <% else %>
-            <li class="nav-item">
-              <%= link_to "Sign Up", new_user_registration_path, class: 'nav-link'  %>
-            </li>
-            <li class="nav-item">
-              <%= link_to "Sign In", new_user_session_path, class: 'nav-link'  %>
-            </li>
-          <% end %>
-        </ul>
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+          <ul class="navbar-nav mr-auto">
+            <!-- left-side nav -->
+          </ul>
+
+          <ul class="navbar-nav ml-auto">
+            <% if user_signed_in? %>
+              <li class="nav-item">
+                <span class="nav-link"><%= link_to current_user.name, edit_user_registration_path %></span>
+              </li>
+              <li class="nav-item">
+                <%= link_to "Logout", destroy_user_session_path, method: :delete, class: 'nav-link'  %>
+              </li>
+            <% else %>
+              <li class="nav-item">
+                <%= link_to "Sign Up", new_user_registration_path, class: 'nav-link'  %>
+              </li>
+              <li class="nav-item">
+                <%= link_to "Sign In", new_user_session_path, class: 'nav-link'  %>
+              </li>
+            <% end %>
+          </ul>
+        </div>
       </div>
     </nav>
 
     <div class="container">
       <% if notice.present? %>
-        <p class="notice"><%= notice %></p>
+        <p class="notice alert alert-primary mt-3"><%= notice %></p>
       <% end %>
 
       <% if alert.present? %>
-        <p class="alert"><%= alert %></p>
+        <p class="alert alert-primary mt-3"><%= alert %></p>
       <% end %>
 
       <%= yield %>

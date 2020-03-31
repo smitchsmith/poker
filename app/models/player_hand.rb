@@ -90,8 +90,12 @@ class PlayerHand < ApplicationRecord
 
   def winnings
     amount = hand.winners_with_amounts[player].to_i - bets_sum
-    sign   = amount.negative? ? "-" : "+"
-    "#{sign} ¢#{amount.abs}"
+    if amount.zero? && bets.blank?
+      "(no bets)"
+    else
+      sign = amount.negative? ? "-" : "+"
+      "#{sign} ¢#{amount.abs}"
+    end
   end
 
   def name_with_position
