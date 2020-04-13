@@ -1,3 +1,13 @@
+<% content_for :javascript do %>
+  <% if @current_player_hand.try(:current_actor?) %>
+    <script>
+      $(document).on("turbolinks:load", function () {
+        window.Poker.handTimer()
+      })
+    </script>
+  <% end %>
+<% end %>
+
 <div class="row mt-3">
   <div class="col">
     <% @hand.table_players.order(:player_id).each do |table_player| %>
@@ -94,7 +104,7 @@
               <% end %>
           </div>
         </div>
-        <div class="col">
+        <div class="col actions-container">
           <h5 class="text-center mb-4">Actions</h5>
           <% if @current_player_hand.current_actor? %>
             <% if @hand.current_betting_round.present? %>
