@@ -97,19 +97,19 @@
         <div class="col">
           <h5 class="text-center mb-4">Actions</h5>
           <% if @current_player_hand.current_actor? %>
-            <% if @hand.current_betting_round.present? && @current_player_hand.call_amount.nonzero? %>
-              <%= render "hands/actions/fold" %>
-              <%= render "hands/actions/call" %>
+            <% if @hand.current_betting_round.present? %>
+              <% if @current_player_hand.call_amount.zero? %>
+                <%= render "hands/actions/check" %>
+              <% else %>
+                <%= render "hands/actions/fold" %>
+                <%= render "hands/actions/call" %>
+              <% end %>
               <% unless @current_player_hand.calling_brings_all_in? %>
                 <%= render "hands/actions/raise" %>
               <% end %>
             <% else %>
-              <%= render "hands/actions/check" %>
-              <% if @hand.current_betting_round.try(:blinds?) && @current_player_hand.big_blind? %>
-                <%= render "hands/actions/raise" %>
-              <% else %>
+                <%= render "hands/actions/check" %>
                 <%= render "hands/actions/bet" %>
-              <% end %>
             <% end %>
           <% else %>
             <% if @hand.finished? %>
@@ -132,6 +132,10 @@
               <% if @current_player_hand.folded? %>
                 <div class="mb-3">
                   <button type="button" class="btn btn-block btn-secondary" disabled>Folded</button>
+                </div>
+              <% elsif @current_player_hand.all_in? %>
+                <div class="mb-3">
+                  <button type="button" class="btn btn-block btn-secondary" disabled>All In</button>
                 </div>
               <% elsif @hand.current_betting_round.present? %>
                 <div class="mb-3">

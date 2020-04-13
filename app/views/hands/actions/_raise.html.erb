@@ -7,7 +7,7 @@
       </div>
       <div class="col-3">
         <%= simple_fields_for :bet do |o| %>
-          <%= o.input :amount, as: :integer, required: false, label: false, input_html: {class: "form-control", step: @hand.small_blind_amount, value: @hand.minimum_raise, min: @hand.minimum_raise, max: @current_player_hand.bring_to_all_in_amount} %>
+          <%= o.input :amount, as: :integer, required: false, label: false, input_html: {class: "form-control", step: @hand.small_blind_amount, value: @current_player_hand.minimum_raise_amount, min: @current_player_hand.minimum_raise_amount, max: @current_player_hand.bring_to_all_in_amount} %>
         <% end %>
       </div>
     </div>

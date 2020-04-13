@@ -10,7 +10,11 @@ class BettingRound < ApplicationRecord
   end
 
   def bettor
-    initial_bet.player
+    if blinds?
+      hand.under_the_gun_player
+    else
+      initial_bet.player
+    end
   end
 
   def blinds?

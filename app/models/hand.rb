@@ -104,12 +104,8 @@ class Hand < ApplicationRecord
   end
 
   def acted_players
-    if current_betting_round.try(:blinds?) && current_actor == big_blind_player
-      players - [big_blind_player]
-    else
-      actor_index = bettor_relative_players.index(current_actor)
-      bettor_relative_players[0...actor_index] - folded_players
-    end
+    actor_index = bettor_relative_players.index(current_actor)
+    bettor_relative_players[0...actor_index] - folded_players
   end
 
   def remaining_players
@@ -207,18 +203,6 @@ class Hand < ApplicationRecord
   end
 
   def next_player
-    next_player = (bettor_relative_players - folded_players - acted_players - all_in_players - [current_actor]).first
-
-    if current_betting_round.try(:blinds?)
-      if current_actor == big_blind_player
-        nil
-      elsif next_player.blank?
-        big_blind_player
-      else
-        next_player
-      end
-    else
-      next_player
-    end
+    (bettor_relative_players - folded_players - acted_players - all_in_players - [current_actor]).first
   end
 end

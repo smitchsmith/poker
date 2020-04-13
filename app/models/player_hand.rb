@@ -10,7 +10,7 @@ class PlayerHand < ApplicationRecord
 
   def call_amount
     amount = hand.largest_bets_sum - bets_sum
-    balance > amount ? amount : balance
+    [amount, balance].min
   end
 
   def calling_brings_all_in?
@@ -45,6 +45,10 @@ class PlayerHand < ApplicationRecord
     current_round_bets_sum + balance
   end
 
+  def minimum_raise_amount
+    [hand.minimum_raise, bring_to_all_in_amount].min
+  end
+
   def has_acted?
     hand.acted_players.include?(player)
   end
@@ -73,8 +77,10 @@ class PlayerHand < ApplicationRecord
     elsif current_actor?
       "..."
     elsif current_bettor?
-      if hand.betting_rounds.where(hand_round: hand.round).count == 1
-        "Bet ¢#{current_betting_round.amount}" unless current_betting_round.blinds?
+      if current_betting_round.blinds?
+        "Called"
+      elsif hand.betting_rounds.where(hand_round: hand.round).count == 1
+        "Bet ¢#{current_betting_round.amount}"
       else
         "Raised to ¢#{current_betting_round.amount}"
       end
