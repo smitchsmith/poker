@@ -6,4 +6,8 @@ class TablePlayer < ApplicationRecord
 
   delegate :name, to: :table, prefix: true
   delegate :name, to: :player, prefix: true
+
+  def sitting_out?
+    balance.zero?
+  end
 end

@@ -2,10 +2,17 @@
   <div class="col">
     <% @hand.table_players.order(:player_id).each do |table_player| %>
       <% player_hand = @hand.player_hands.find_by(player_id: table_player.player_id) %>
-      <% if @hand.finished? %>
-        <% if player_hand.present? %>
+      <% if player_hand.present? %>
+        <% if @hand.finished? %>
           <div class="row border mb-3 mx-2">
             <div class="col border-right border-bottom"><%= player_hand.name_with_position %></div>
+            <% if @hand.current? %>
+              <div class="col border-bottom"></div>
+              <div class="w-100"></div>
+              <div class="col border-right border-bottom">
+                  Bank: ¢<%= player_hand.balance %>
+              </div>
+            <% end %>
             <div class="col border-bottom"><%= player_hand.winnings %></div>
             <% unless player_hand.folded? || player_hand.muck? %>
               <div class="w-100"></div>
@@ -35,9 +42,7 @@
               <% end %>
             </div>
           </div>
-        <% end %>
-      <% else %>
-        <% if player_hand.present? %>
+        <% else %>
           <div class="row border mb-3 mx-2">
             <div class="col border-right border-bottom"><%= player_hand.name_with_position %></div>
             <div class="col border-bottom"><%= player_hand.status.to_s.gsub("\n", "<br>").html_safe %></div>
@@ -45,15 +50,15 @@
             <div class="col border-right">Bank: ¢<%= player_hand.balance %></div>
             <div class="col">Round: ¢<%= player_hand.current_round_bets_sum %></div>
           </div>
-        <% else %>
-          <div class="row border mb-3 mx-2">
-            <div class="col border-right border-bottom"><%= table_player.player_name %></div>
-            <div class="col border-bottom">Sitting Out</div>
-            <div class="w-100"></div>
-            <div class="col border-right">Bank: ¢<%= table_player.balance %></div>
-            <div class="col"></div>
-          </div>
         <% end %>
+      <% else %>
+        <div class="row border mb-3 mx-2">
+          <div class="col border-right border-bottom"><%= table_player.player_name %></div>
+          <div class="col border-bottom">Sitting Out</div>
+          <div class="w-100"></div>
+          <div class="col border-right">Bank: ¢<%= table_player.balance %></div>
+          <div class="col"></div>
+        </div>
       <% end %>
     <% end %>
   </div>

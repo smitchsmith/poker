@@ -1,5 +1,5 @@
 class PotSplitter < Struct.new(:hand)
-  delegate :remaining_player_hands, :folded_player_hands, :amount, to: :hand
+  delegate :remaining_player_hands, :folded_player_hands, to: :hand
 
   def winners_with_amounts
     subpots.each_with_object({}) do |pot, h|
@@ -41,7 +41,11 @@ class PotSplitter < Struct.new(:hand)
         max_amount = range_max - range_min
         amount > max_amount ? max_amount : amount
       end
-    end.sum
+    end.compact.sum
+  end
+
+  def amount
+    hand.pot_amount
   end
 
   class Pot < Struct.new(:player_hands, :amount)

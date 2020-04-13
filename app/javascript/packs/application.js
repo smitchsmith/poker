@@ -17,7 +17,7 @@ var $ = require("jquery")
 // const images = require.context('../images', true)
 // const imagePath = (name) => images(name, true)
 
-$(function () {
+$(document).on("turbolinks:load", function () {
   const fixRaiseButtonName = function () {
     const input = $(".raise-form #bet_amount")
     const button = input.closest("form").find("input[type=submit]")

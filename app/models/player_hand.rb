@@ -30,7 +30,6 @@ class PlayerHand < ApplicationRecord
   end
 
   def current_bettor?
-    return false if hand.current_bettor.blank?
     hand.current_bettor == player
   end
 

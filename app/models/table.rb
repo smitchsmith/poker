@@ -7,6 +7,7 @@ class Table < ApplicationRecord
   has_many :hands
 
   def create_hand!
+    raise if active_players.count < 2
     ActiveRecord::Base.transaction do
       cards      = Deck.shuffle
       hand_cards = cards.shift(5)
@@ -34,6 +35,10 @@ class Table < ApplicationRecord
     all_players.order(:id)
   end
 
+  def active_players
+    table_players.reject(&:sitting_out?).map(&:player).sort_by(&:id)
+  end
+
   def current_hand
     hands.order(:id).last
   end
@@ -42,9 +47,16 @@ class Table < ApplicationRecord
 
   def next_dealer
     if current_hand.present?
-      current_hand.small_blind_player
+      next_dealer = nil
+      i           = 1
+      until next_dealer.present?
+        relative_player = current_hand.relative_player(i)
+        next_dealer     = relative_player if active_players.include?(relative_player)
+        i += 1
+      end
+      next_dealer
     else
-      players.first
+      active_players.first
     end
   end
 end
