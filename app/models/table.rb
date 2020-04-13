@@ -1,10 +1,13 @@
-class Table < ApplicationRecord
-  SMALL_BLIND = 10
-  BIG_BLIND   = SMALL_BLIND * 2
+# name, active?, big_blind_amount, small_blind_amount
 
+class Table < ApplicationRecord
+  belongs_to :created_by, class_name: "User", optional: true
   has_many :table_players
   has_many :all_players, through: :table_players, source: :player
   has_many :hands
+  accepts_nested_attributes_for :table_players
+
+  validates :name, :small_blind_amount, :big_blind_amount, presence: true
 
   def create_hand!
     raise if active_players.count < 2
@@ -23,16 +26,12 @@ class Table < ApplicationRecord
     end
   end
 
-  def small_blind_amount
-    SMALL_BLIND
-  end
-
-  def big_blind_amount
-    BIG_BLIND
-  end
-
   def players
     all_players.order(:id)
+  end
+
+  def player_names
+    players.map(&:name)
   end
 
   def active_players

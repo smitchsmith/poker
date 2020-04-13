@@ -1,0 +1,18 @@
+<div class="mb-4">
+  <% if @table.persisted? %>
+    <%= f.input :active %>
+  <% end %>
+  <%= f.input :name %>
+  <%= f.input :small_blind_amount %>
+  <%= f.input :big_blind_amount %>
+
+  <h5 class="mt-4">Players</h5>
+  <div id="table_players">
+    <%= f.simple_fields_for :table_players, f.object.table_players.order(:id) do |ff| %>
+      <%= render "table_player_fields", f: ff %>
+    <% end %>
+    <div class='links'>
+      <%= link_to_add_association 'Add Player', f, :table_players %>
+    </div>
+  </div>
+</div>

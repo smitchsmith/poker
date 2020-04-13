@@ -8,6 +8,8 @@ require("turbolinks").start()
 require("@rails/activestorage").start()
 require("channels")
 window.$ = window.jQuery = require("jquery");
+require("chosen-js")
+require("cocoon-js")
 // require("popper")
 
 // Uncomment to copy all static images under ../images to the output folder and reference
@@ -57,4 +59,12 @@ $(document).on("turbolinks:load", function () {
   })
 
   fixRaiseButtonName()
+
+  $('select').chosen({search_contains: true, allow_single_deselect: true});
+
+  $("#table_players").on('click', function(event) {
+    setTimeout(function () {
+      $('select').chosen({search_contains: true, allow_single_deselect: true});
+    }, 100)
+  });
 })

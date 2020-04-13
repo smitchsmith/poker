@@ -1,0 +1,8 @@
+<h3 class="mt-4 mb-4">New Table</h3>
+
+<%= simple_form_for @table do |f| %>
+  <%= render "form", f: f %>
+  <div class="form-actions">
+    <%= f.button :submit, class: "btn btn-success" %>
+  </div>
+<% end %>

@@ -1,0 +1,7 @@
+<div class="nested-fields">
+  <%= f.association :player %>
+  <%= f.input :balance %>
+  <% unless @table.persisted? %>
+    <%= link_to_remove_association "Remove Player", f %>
+  <% end %>
+</div>
