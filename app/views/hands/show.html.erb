@@ -10,7 +10,7 @@
 
 <div class="row mt-3">
   <div class="col">
-    <% @hand.table_players.order(:player_id).each do |table_player| %>
+    <% @hand.table_players.order(:id).each do |table_player| %>
       <% player_hand = @hand.player_hands.find_by(player_id: table_player.player_id) %>
       <% if player_hand.present? %>
         <% if @hand.finished? %>

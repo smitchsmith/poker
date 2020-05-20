@@ -27,7 +27,7 @@ class Table < ApplicationRecord
   end
 
   def players
-    all_players.order(:id)
+    table_players.order(:id).map(&:player)
   end
 
   def player_names
@@ -35,7 +35,7 @@ class Table < ApplicationRecord
   end
 
   def active_players
-    table_players.reject(&:sitting_out?).map(&:player).sort_by(&:id)
+    table_players.reject(&:sitting_out?).sort_by(&:id).map(&:player)
   end
 
   def current_hand

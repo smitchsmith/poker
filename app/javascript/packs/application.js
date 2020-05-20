@@ -31,7 +31,7 @@ window.Poker.handTimer = function () {
         elementsToFlash.css("filter", "invert(1)")
       }
     }, 500)
-    const beep = new Audio('/assets/tone.wav')
+    const beep = new Audio('/assets/tone-7db2e0a85e47c75f7b64a4b89040f2a3129e2b5e2d03200d9aebea71d6b6572b.wav')
     beep.play()
   }, 15000)
 

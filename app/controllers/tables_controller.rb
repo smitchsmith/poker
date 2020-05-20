@@ -47,6 +47,6 @@ class TablesController < ApplicationController
   end
 
   def table_params
-    params.require(:table).permit(:name, :big_blind_amount, :small_blind_amount, :starting_balance, table_players_attributes: [:id, :player_id, :balance])
+    params.require(:table).permit(:name, :big_blind_amount, :small_blind_amount, :starting_balance, :active, table_players_attributes: [:id, :player_id, :balance])
   end
 end
