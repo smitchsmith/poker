@@ -35,7 +35,7 @@ class Table < ApplicationRecord
   end
 
   def active_players
-    table_players.reject(&:sitting_out?).sort_by(&:id).map(&:player)
+    table_players.reject(&:not_in_hand?).sort_by(&:id).map(&:player)
   end
 
   def current_hand
