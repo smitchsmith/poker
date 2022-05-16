@@ -47,7 +47,7 @@ class Hand < ApplicationRecord
 
   def create_betting_round!(player:, amount:, kind: nil)
     betting_round = betting_rounds.create!(kind: kind, hand_round: round, amount: amount)
-    player_hand   = player_hands.find_by(player_id: player.id)
+    player_hand   = player_hands.detect { |player_hand| player_hand.player == player }
     bet_amount    = amount - player_hand.current_round_bets_sum
     betting_round.initial_bet = betting_round.create_bet!(player: player, amount: bet_amount)
     betting_round.save!

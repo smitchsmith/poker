@@ -22,7 +22,11 @@ class HandAction < OpenStruct
   end
 
   def bet
-    hand.create_betting_round!(player: player, amount: bet_amount)
+    if bet_amount == player_hand.call_amount
+      call
+    else
+      hand.create_betting_round!(player: player, amount: bet_amount)
+    end
   end
 
   def raise_bet
@@ -38,6 +42,6 @@ class HandAction < OpenStruct
   end
 
   def player_hand
-    @player_hand ||= PlayerHand.find_by(hand_id: hand.id, player_id: player.id)
+    @player_hand ||= hand.player_hands.detect { |player_hand| player_hand.player == player }
   end
 end

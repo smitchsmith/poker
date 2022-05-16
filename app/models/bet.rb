@@ -13,7 +13,7 @@ class Bet < ApplicationRecord
   private
 
   def table_player
-    @table_player ||= TablePlayer.find_by(table_id: table_id, player_id: player_id)
+    @table_player ||= table.table_players.detect { |table_player| table_player.player == player }
   end
 
   def deduct_from_player

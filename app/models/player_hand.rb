@@ -130,10 +130,10 @@ class PlayerHand < ApplicationRecord
   private
 
   def bets
-    Bet.joins(:betting_round).where(player_id: player_id, betting_rounds: {hand_id: hand_id})
+    hand.bets.where(player_id: player_id)
   end
 
   def table_player
-    TablePlayer.find_by(table_id: hand.table_id, player_id: player_id)
+    hand.table.table_players.detect { |table_player| table_player.player_id == player_id  }
   end
 end
